@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DungeonNexus9</title>
+    <title>0 Nexus 🜋</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
     <script type="importmap">
@@ -40,7 +40,7 @@
         const doorData = [
             { id: 1, model: `${modelBasePath}glyph_self.glb`, link: 'https://zakdegarmo.github.io/MyOntology/' },
             { id: 2, model: `${modelBasePath}glyph_thought.glb`, link: 'https://zakdegarmo.github.io/ZaksNotepad/index.html' },
-            { id: 3, model: `${modelBasePath}glyph_logic.glb`, link: 'https://3-d-file-explorer-git-main-zachary-degarmos-projects.vercel.app/' },
+            { id: 3, model: `${modelBasePath}glyph_logic.glb`, link: 'https://3-d-file-explorer.vercel.app/' },
             { id: 4, model: `${modelBasePath}glyph_unity.glb`, link: 'https://ai.studio/apps/drive/1p-fpFOyaUNJHHFCzgQ6x9aqIkt5xi0D9'},
             { id: 5, model: `${modelBasePath}glyph_existence.glb`, link: 'https://ai.studio/apps/drive/1zRyunFnZjxXt3TNy2uwBGcxze-pFhZ-w' },
             { id: 6, model: `${modelBasePath}glyph_improvement.glb`, link: 'https://data-vis-eosin.vercel.app/' },
@@ -186,9 +186,9 @@
             
             doors.forEach((doorGroup, i) => {
                 const angle = time * 0.5 + (i / doorData.length) * Math.PI * 2;
-                const doorRadius = roomSize * 0.4;
-                const doorHeight = 30;
-                const hoverOffset = 5;
+                const doorRadius = roomSize * 0.314;
+                const doorHeight = 50;
+                const hoverOffset = 10;
                 
                 doorGroup.position.x = Math.cos(angle) * doorRadius;
                 doorGroup.position.z = Math.sin(angle) * doorRadius;
