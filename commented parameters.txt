@@ -24,32 +24,34 @@
 
     <script type="module">
         import * as THREE from 'three';
+        // CSS2DRenderer is used to render HTML elements (labels) on top of the 3D scene
         import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+        // GLTFLoader is used to load 3D models in GLB/GLTF format
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
+        // Scene variables
         let camera, scene, renderer, labelRenderer;
-        let doors = [];
+        let doors = []; // Array to hold the 3D door groups
         let hub;
+        
+        // Raycaster and mouse vector for handling click events
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
         let roomSize;
 
+        // Variables for keyboard controls (W, A, S, D)
         let moveForward = false;
         let moveBackward = false;
         let moveLeft = false;
         let moveRight = false;
         let rotateLeft = false;
         let rotateRight = false;
-        let lookUp = false;
-        let lookDown = false;
-	let moveUp = false;
-	let moveDown = false;
-        const speed = 0.5;
-        const rotationSpeed = 0.01;
-        const verticalRotationSpeed = 0.01;
-        let cameraPivot;
+        const speed = 0.5; // Controls how fast the camera moves
+        const rotationSpeed = 0.01; // Controls how fast the camera rotates
 
+        // Base path for 3D models stored on GitHub
         const modelBasePath = 'https://raw.githubusercontent.com/zakdegarmo/MyOS/main/%F0%9F%9C%8BMyWebsite/models/';
+        // Array of objects, each containing a model path and a link for a door
         const doorData = [
             { id: 1, model: `${modelBasePath}glyph_self.glb`, link: 'https://zakdegarmo.github.io/MyOntology/' },
             { id: 2, model: `${modelBasePath}glyph_thought.glb`, link: 'https://zakdegarmo.github.io/ZaksNotepad/index.html' },
@@ -62,8 +64,10 @@
             { id: 9, model: `${modelBasePath}glyph_transcendence.glb`, link: 'https://hyper-aether-pilgrim.vercel.app/' }
         ];
 
+        // Initializes the 3D scene, renderer, and camera
         function init() {
             scene = new THREE.Scene();
+            // Adds a fog effect to the scene
             scene.fog = new THREE.FogExp2(0x000000, 0.005);
 
             renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -75,38 +79,37 @@
             labelRenderer.setSize(window.innerWidth, window.innerHeight);
             labelRenderer.domElement.style.position = 'absolute';
             labelRenderer.domElement.style.top = '0px';
-            labelRenderer.domElement.style.pointerEvents = 'none';
+            labelRenderer.domElement.style.pointerEvents = 'none'; // Allows clicks to pass through to the main canvas
             document.body.appendChild(labelRenderer.domElement);
 
-             roomSize = 250;
-            const wallGeometry = new THREE.IcosahedronGeometry(roomSize, roomSize/5);
-            const wallMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, wireframe: true, side:THREE.DoubleSide });
+            // Defines the size of the wireframe room
+            roomSize = 750;
+            const wallGeometry = new THREE.CylinderGeometry(roomSize / 2, roomSize / 2, roomSize, 9, 1, true);
+            const wallMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, wireframe: true, side: THREE.BackSide });
             const walls = new THREE.Mesh(wallGeometry, wallMaterial);
             scene.add(walls);
 
-
+            // Creates the floor
             const floorSize = roomSize * 2;
             const floorGeometry = new THREE.CircleGeometry(floorSize / 2, 9);
             const floorMaterial = new THREE.MeshBasicMaterial({ color: 0x808080, side: THREE.DoubleSide });
             const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-            floor.rotation.x = -Math.PI / 2;
+            floor.rotation.x = -Math.PI / 2; // Rotates the plane to be horizontal
             floor.position.y = -(roomSize / 2);
             scene.add(floor);
 
+            // Sets up the camera and its initial position
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 5000);
-            
-            // Create a pivot object to handle camera movement and horizontal rotation
-            cameraPivot = new THREE.Object3D();
-            cameraPivot.add(camera);
-            scene.add(cameraPivot);
-            cameraPivot.position.set(0, -(roomSize / 2) + 2, roomSize * 0.4);
+            camera.position.set(0, -(roomSize / 2) + 2, roomSize * 0.4); // Locks the camera to a fixed height for "walking"
 
+            // Adds lighting
             const ambientLight = new THREE.AmbientLight(0x444444, 0.5);
             scene.add(ambientLight);
             const pointLight = new THREE.PointLight(0xffffff, 0.5, 1000);
             pointLight.position.set(0, 0, 0);
             scene.add(pointLight);
 
+            // Creates the central hub
             const hubGeometry = new THREE.IcosahedronGeometry(15, 3);
             const hubMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, wireframe: true });
             hub = new THREE.Mesh(hubGeometry, hubMaterial);
@@ -118,12 +121,14 @@
             
             createDoors();
 
+            // Adds event listeners for window resize, mouse clicks, and keyboard input
             window.addEventListener('resize', onWindowResize);
             document.addEventListener('click', onClick);
             document.addEventListener('keydown', onKeyDown);
             document.addEventListener('keyup', onKeyUp);
         }
 
+        // Handles key presses to start or stop movement
         function onKeyDown(event) {
             switch (event.key.toLowerCase()) {
                 case 'w':
@@ -132,10 +137,10 @@
                 case 's':
                     moveBackward = true;
                     break;
-                case 'd':
+                case 'a':
                     moveLeft = true;
                     break;
-                case 'a':
+                case 'd':
                     moveRight = true;
                     break;
                 case 'q':
@@ -143,18 +148,6 @@
                     break;
                 case 'e':
                     rotateRight = true;
-                    break;
-                case 'f':
-                    lookUp = true;
-                    break;
-                case 'r':
-                    lookDown = true;
-                    break;
-                case 'z':
-                    moveDown = true;
-                    break;
-                case 'c':
-                    moveUp = true;
                     break;
             }
         }
@@ -167,10 +160,10 @@
                 case 's':
                     moveBackward = false;
                     break;
-                case 'd':
+                case 'a':
                     moveLeft = false;
                     break;
-                case 'a':
+                case 'd':
                     moveRight = false;
                     break;
                 case 'q':
@@ -179,21 +172,10 @@
                 case 'e':
                     rotateRight = false;
                     break;
-                case 'f':
-                    lookUp = false;
-                    break;
-                case 'r':
-                    lookDown = false;
-                    break;
-                case 'z':
-                    moveDown = false;
-                    break;
-                case 'c':
-                    moveUp = false;
-                    break;
             }
         }
 
+        // Loads and positions the 3D door models
         function createDoors() {
             const loader = new GLTFLoader();
             const doorMaterial = new THREE.MeshStandardMaterial({
@@ -220,6 +202,7 @@
                             child.material = doorMaterial;
                         }
                     });
+                    // Adjusts the model's scale to a consistent size
                     const box = new THREE.Box3().setFromObject(model);
                     const size = box.getSize(new THREE.Vector3());
                     const scale = 20 / Math.max(size.x, size.y, size.z);
@@ -230,6 +213,7 @@
             });
         }
 
+        // Resizes the renderer and camera when the browser window is resized
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
@@ -237,16 +221,21 @@
             labelRenderer.setSize(window.innerWidth, window.innerHeight);
         }
 
+        // Handles click events to detect which object was clicked and navigate
         function onClick(event) {
             event.preventDefault();
+            // Calculates mouse position in normalized device coordinates (-1 to +1)
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
 
+            // Casts a ray from the camera through the mouse position
             raycaster.setFromCamera(mouse, camera);
+            // Finds all objects the ray intersects
             const intersects = raycaster.intersectObjects(scene.children, true);
             
             if (intersects.length > 0) {
                 let selectedObject = intersects[0].object;
+                // Traverses up the parent hierarchy to find the main door group
                 while (selectedObject.parent && !selectedObject.userData.link) {
                     selectedObject = selectedObject.parent;
                 }
@@ -254,8 +243,10 @@
                 const { id, link } = selectedObject.userData;
 
                 if (id === 0) {
+                    // Special case for the hub to go back
                     setTimeout(() => { window.history.back(); }, 500);
                 } else if (link && link !== '#') {
+                    // Navigates to the linked URL
                     window.location.href = link;
                 } else {
                     console.log(`Clicked on Portal ${id}, but no link is assigned.`);
@@ -263,74 +254,76 @@
             }
         }
 
+        // The main animation loop
         function animate() {
             requestAnimationFrame(animate);
             
-            // Get the camera's world direction for movement
-            const direction = new THREE.Vector3();
-            camera.getWorldDirection(direction);
-
-            // Handle horizontal movement on the cameraPivot
+            // Updates camera position based on keyboard input
             if (moveForward) {
-                cameraPivot.position.addScaledVector(direction, speed);
+                const direction = new THREE.Vector3();
+                camera.getWorldDirection(direction);
+                camera.position.addScaledVector(direction, speed);
             }
             if (moveBackward) {
-                cameraPivot.position.addScaledVector(direction, -speed);
+                const direction = new THREE.Vector3();
+                camera.getWorldDirection(direction);
+                camera.position.addScaledVector(direction, -speed);
             }
             if (moveLeft) {
-                const rightVector = new THREE.Vector3().crossVectors(direction, cameraPivot.up);
-                cameraPivot.position.addScaledVector(rightVector, speed);
+                const direction = new THREE.Vector3();
+                camera.getWorldDirection(direction);
+                const rightVector = direction.cross(camera.up);
+                camera.position.addScaledVector(rightVector, -speed);
             }
             if (moveRight) {
-                const rightVector = new THREE.Vector3().crossVectors(direction, cameraPivot.up);
-                cameraPivot.position.addScaledVector(rightVector, -speed);
+                const direction = new THREE.Vector3();
+                camera.getWorldDirection(direction);
+                const rightVector = direction.cross(camera.up);
+                camera.position.addScaledVector(rightVector, speed);
             }
 
-            // Horizontal rotation on the pivot
+            // Updates camera rotation based on keyboard input
             if (rotateLeft) {
-                cameraPivot.rotation.y += rotationSpeed;
+                camera.rotation.y += rotationSpeed;
             }
             if (rotateRight) {
-                cameraPivot.rotation.y -= rotationSpeed;
+                camera.rotation.y -= rotationSpeed;
             }
-
-            // Vertical rotation on the camera itself
-            if (lookUp) {
-                camera.rotation.x = Math.max(-Math.PI / 2, camera.rotation.x - verticalRotationSpeed);
-            }
-            if (lookDown) {
-                camera.rotation.x = Math.min(Math.PI / 2, camera.rotation.x + verticalRotationSpeed);
-            }
+            
+            // Ensures the camera stays at a fixed "walking" height
+            camera.position.y = -(roomSize / 2) + 2;
+            // Prevents unwanted vertical camera rotation from other inputs
+            camera.rotation.x = 0;
+            camera.rotation.z = 0;
 
             const time = Date.now() * 0.0005;
             
+            // Animates the doors (positions, rotation, and pulsing scale)
             doors.forEach((doorGroup, i) => {
-                const angle = time * 0.2 + (i / doorData.length) * Math.PI * 2;
+                const angle = time * 0.5 + (i / doorData.length) * Math.PI * 2;
                 const doorRadius = roomSize * 0.5;
                 const doorHeight = 50;
                 const hoverOffset = 10;
                 
+                // Calculates the position in a circle around the center
                 doorGroup.position.x = Math.cos(angle) * doorRadius;
                 doorGroup.position.z = Math.sin(angle) * doorRadius;
+                // Adds a vertical sine wave for a hovering effect
                 doorGroup.position.y = -(roomSize / 2) + (doorHeight / 2) + hoverOffset + Math.sin(angle * 2.5 + i) * 5;
+                // Makes the doors face the central hub
                 doorGroup.lookAt(new THREE.Vector3(0, doorGroup.position.y, 0));
 
                 if (doorGroup.children.length > 0) {
+                    // Makes the model pulse in scale
                     const pulseScale = 1 + Math.sin(time * 5 + i) * 0.02;
                     doorGroup.children[0].scale.set(pulseScale, pulseScale, pulseScale);
                 }
             });
 
-        hub.lookAt(camera.position);
-	//cameraPivot.position.y = -100;
-	const verticalSpeed = 0.5;
-            if (moveUp) {
-                cameraPivot.position.y += verticalSpeed;
-            }
-            if (moveDown) {
-                cameraPivot.position.y -= verticalSpeed;
-            }
+            // Makes the central hub always face the camera
+            hub.lookAt(camera.position);
 
+            // Renders the scene for both 3D and 2D elements
             renderer.render(scene, camera);
             labelRenderer.render(scene, camera);
         }

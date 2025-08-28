@@ -40,14 +40,8 @@
         let moveRight = false;
         let rotateLeft = false;
         let rotateRight = false;
-        let lookUp = false;
-        let lookDown = false;
-	let moveUp = false;
-	let moveDown = false;
         const speed = 0.5;
         const rotationSpeed = 0.01;
-        const verticalRotationSpeed = 0.01;
-        let cameraPivot;
 
         const modelBasePath = 'https://raw.githubusercontent.com/zakdegarmo/MyOS/main/%F0%9F%9C%8BMyWebsite/models/';
         const doorData = [
@@ -64,7 +58,7 @@
 
         function init() {
             scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x000000, 0.005);
+            scene.fog = new THREE.FogExp2(0x000000, 0.003);
 
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setPixelRatio(window.devicePixelRatio);
@@ -78,41 +72,35 @@
             labelRenderer.domElement.style.pointerEvents = 'none';
             document.body.appendChild(labelRenderer.domElement);
 
-             roomSize = 250;
-            const wallGeometry = new THREE.IcosahedronGeometry(roomSize, roomSize/5);
+            roomSize = 250;
+            const wallGeometry = new THREE.IcosahedronGeometry(roomSize, roomSize);
             const wallMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, wireframe: true, side:THREE.DoubleSide });
             const walls = new THREE.Mesh(wallGeometry, wallMaterial);
             scene.add(walls);
 
-
-            const floorSize = roomSize * 2;
-            const floorGeometry = new THREE.CircleGeometry(floorSize / 2, 9);
-            const floorMaterial = new THREE.MeshBasicMaterial({ color: 0x808080, side: THREE.DoubleSide });
+            const floorSize = roomSize*2;
+            const floorGeometry = new THREE.CircleGeometry(roomSize, 729);
+            const floorMaterial = new THREE.MeshBasicMaterial({ color: 0x808080, wireframe: false, side: THREE.DoubleSide });
             const floor = new THREE.Mesh(floorGeometry, floorMaterial);
             floor.rotation.x = -Math.PI / 2;
-            floor.position.y = -(roomSize / 2);
+            floor.position.y = 0;
             scene.add(floor);
 
-            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 5000);
-            
-            // Create a pivot object to handle camera movement and horizontal rotation
-            cameraPivot = new THREE.Object3D();
-            cameraPivot.add(camera);
-            scene.add(cameraPivot);
-            cameraPivot.position.set(0, -(roomSize / 2) + 2, roomSize * 0.4);
+            camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 1, 10000);
+            camera.position.set((Math.PI), 10, roomSize/2);
 
             const ambientLight = new THREE.AmbientLight(0x444444, 0.5);
             scene.add(ambientLight);
-            const pointLight = new THREE.PointLight(0xffffff, 0.5, 1000);
-            pointLight.position.set(0, 0, 0);
+            const pointLight = new THREE.PointLight(0xffffff, 0.8, 1000);
+            pointLight.position.set(0, 50, 0);
             scene.add(pointLight);
 
             const hubGeometry = new THREE.IcosahedronGeometry(15, 3);
             const hubMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, wireframe: true });
             hub = new THREE.Mesh(hubGeometry, hubMaterial);
-            const hubHeight = 15 * 2;
+            const hubHeight = floor.position.y;
             const hoverOffset = 5;
-            hub.position.y = -(roomSize / 2) + (hubHeight / 2) + hoverOffset;
+            hub.position.y = 0;
             hub.userData = { id: 0, name: "Back to Previous" };
             scene.add(hub);
             
@@ -132,10 +120,10 @@
                 case 's':
                     moveBackward = true;
                     break;
-                case 'd':
+                case 'a':
                     moveLeft = true;
                     break;
-                case 'a':
+                case 'd':
                     moveRight = true;
                     break;
                 case 'q':
@@ -143,18 +131,6 @@
                     break;
                 case 'e':
                     rotateRight = true;
-                    break;
-                case 'f':
-                    lookUp = true;
-                    break;
-                case 'r':
-                    lookDown = true;
-                    break;
-                case 'z':
-                    moveDown = true;
-                    break;
-                case 'c':
-                    moveUp = true;
                     break;
             }
         }
@@ -167,10 +143,10 @@
                 case 's':
                     moveBackward = false;
                     break;
-                case 'd':
+                case 'a':
                     moveLeft = false;
                     break;
-                case 'a':
+                case 'd':
                     moveRight = false;
                     break;
                 case 'q':
@@ -178,18 +154,6 @@
                     break;
                 case 'e':
                     rotateRight = false;
-                    break;
-                case 'f':
-                    lookUp = false;
-                    break;
-                case 'r':
-                    lookDown = false;
-                    break;
-                case 'z':
-                    moveDown = false;
-                    break;
-                case 'c':
-                    moveUp = false;
                     break;
             }
         }
@@ -202,7 +166,7 @@
                 roughness: 0.2,
                 emissive: 0x00ffff,
                 emissiveIntensity: 0.2,
-                wireframe: true
+                wireframe: false
             });
 
             doorData.forEach((data, i) => {
@@ -266,53 +230,51 @@
         function animate() {
             requestAnimationFrame(animate);
             
-            // Get the camera's world direction for movement
-            const direction = new THREE.Vector3();
-            camera.getWorldDirection(direction);
-
-            // Handle horizontal movement on the cameraPivot
             if (moveForward) {
-                cameraPivot.position.addScaledVector(direction, speed);
+                const direction = new THREE.Vector3();
+                camera.getWorldDirection(direction);
+                camera.position.addScaledVector(direction, speed);
             }
             if (moveBackward) {
-                cameraPivot.position.addScaledVector(direction, -speed);
+                const direction = new THREE.Vector3();
+                camera.getWorldDirection(direction);
+                camera.position.addScaledVector(direction, -speed);
             }
             if (moveLeft) {
-                const rightVector = new THREE.Vector3().crossVectors(direction, cameraPivot.up);
-                cameraPivot.position.addScaledVector(rightVector, speed);
+                const direction = new THREE.Vector3();
+                camera.getWorldDirection(direction);
+                const rightVector = direction.cross(camera.up);
+                camera.position.addScaledVector(rightVector, -speed);
             }
             if (moveRight) {
-                const rightVector = new THREE.Vector3().crossVectors(direction, cameraPivot.up);
-                cameraPivot.position.addScaledVector(rightVector, -speed);
+                const direction = new THREE.Vector3();
+                camera.getWorldDirection(direction);
+                const rightVector = direction.cross(camera.up);
+                camera.position.addScaledVector(rightVector, speed);
             }
 
-            // Horizontal rotation on the pivot
             if (rotateLeft) {
-                cameraPivot.rotation.y += rotationSpeed;
+                camera.rotation.y += rotationSpeed;
             }
             if (rotateRight) {
-                cameraPivot.rotation.y -= rotationSpeed;
+                camera.rotation.y -= rotationSpeed;
             }
-
-            // Vertical rotation on the camera itself
-            if (lookUp) {
-                camera.rotation.x = Math.max(-Math.PI / 2, camera.rotation.x - verticalRotationSpeed);
-            }
-            if (lookDown) {
-                camera.rotation.x = Math.min(Math.PI / 2, camera.rotation.x + verticalRotationSpeed);
-            }
+            
+            camera.position.y = 10;
+            camera.rotation.x = 0;
+            camera.rotation.z = 0;
 
             const time = Date.now() * 0.0005;
             
             doors.forEach((doorGroup, i) => {
-                const angle = time * 0.2 + (i / doorData.length) * Math.PI * 2;
+                const angle = time * 0.5 + (i / doorData.length) * Math.PI * 2;
                 const doorRadius = roomSize * 0.5;
                 const doorHeight = 50;
                 const hoverOffset = 10;
                 
                 doorGroup.position.x = Math.cos(angle) * doorRadius;
                 doorGroup.position.z = Math.sin(angle) * doorRadius;
-                doorGroup.position.y = -(roomSize / 2) + (doorHeight / 2) + hoverOffset + Math.sin(angle * 2.5 + i) * 5;
+                doorGroup.position.y = 20;
                 doorGroup.lookAt(new THREE.Vector3(0, doorGroup.position.y, 0));
 
                 if (doorGroup.children.length > 0) {
@@ -321,15 +283,7 @@
                 }
             });
 
-        hub.lookAt(camera.position);
-	//cameraPivot.position.y = -100;
-	const verticalSpeed = 0.5;
-            if (moveUp) {
-                cameraPivot.position.y += verticalSpeed;
-            }
-            if (moveDown) {
-                cameraPivot.position.y -= verticalSpeed;
-            }
+            hub.lookAt(camera.position);
 
             renderer.render(scene, camera);
             labelRenderer.render(scene, camera);
